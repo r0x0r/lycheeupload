@@ -68,10 +68,10 @@ To make albums public, change publicAlbum to 1.
 
 `python main.py src_dir [-r] [-c alternative_conf_file] [-v]`
 
-`src_dir` - source directory with photos you want to upload to Lychee
-`-r` - Replace mode. Albums that already exist in Lychee will be replaced with local ones
-`-c alternative_conf_file` - Path to an alternative configuration file. By default *conf.json* is used.
-`-v` - Verbose mode. LycheeUpload will report that it is doing. By default only errors are displayed.
+- `src_dir` - source directory with photos you want to upload to Lychee
+- `-r` - Replace mode. Albums that already exist in Lychee will be replaced with local ones
+- `-c alternative_conf_file` - Path to an alternative configuration file. By default *conf.json* is used.
+- `-v` - Verbose mode. LycheeUpload will report that it is doing. By default only errors are displayed.
 
 
 # Changelog
