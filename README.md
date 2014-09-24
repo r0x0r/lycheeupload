@@ -14,7 +14,7 @@ First retrieve project either by downloading it from here or if you have git ins
 
 `git clone https://github.com/r0x0r/lycheeupload`
 
-Install the following dependencies:
+Install the following 
 
 - Python 2.7
 - mysql-connector-python
@@ -29,7 +29,7 @@ Install the following dependencies:
 
 Installing dependencies on OSX is a bit trickier.
 
-First you have to have Command Line Tools for Xcode installed. Go to (Downloads for Apple developers)[http://developer.apple.com/downloads/index.action]. Download and install Command Line Tools for Xcode.
+First you have to have Command Line Tools for Xcode installed. Go to [Downloads for Apple developers](http://developer.apple.com/downloads/index.action). Download and install Command Line Tools for Xcode.
 
 Install *pip* if you do not have it already
 
