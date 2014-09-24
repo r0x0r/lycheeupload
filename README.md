@@ -1,5 +1,5 @@
 # Lychee Upload
-A command line tool for uploading photos on a hard drive to a Lychee installation on a remote server via SSH.
+A command line tool for uploading photos on a hard drive to a [Lychee](http://github.com/electerious/Lychee) installation on a remote server via SSH.
 Based on [lycheesync](https://github.com/GustavePate/lycheesync) by Gustave Paté
 
 
