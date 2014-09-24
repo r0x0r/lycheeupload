@@ -10,11 +10,11 @@ If you want to replace albums in the Lychee database, then you can use *-r* opti
 
 # Installation
 
-* First retrieve project either by downloading it from here or if you have git installed, then checkout the project
+First retrieve project either by downloading it from here or if you have git installed, then checkout the project
 
 `git clone https://github.com/r0x0r/lycheeupload`
 
-* Install the following dependencies:
+Install the following dependencies:
 
 - Python 2.7
 - mysql-connector-python
@@ -29,17 +29,19 @@ If you want to replace albums in the Lychee database, then you can use *-r* opti
 
 Installing dependencies on OSX is a bit trickier.
 
-- First you have to have Command Line Tools for Xcode installed. Go to (Downloads for Apple developers)[http://developer.apple.com/downloads/index.action]. Download and install Command Line Tools for Xcode.
+First you have to have Command Line Tools for Xcode installed. Go to (Downloads for Apple developers)[http://developer.apple.com/downloads/index.action]. Download and install Command Line Tools for Xcode.
 
-- Install *pip* if you do not have it already
+Install *pip* if you do not have it already
 
 `sudo easy_install pip`
 
-- Finally install dependencies using *pip*
+Finally install dependencies using *pip*
 
 `sudo pip install mysql-connector-python paramiko Pillow`
 
-* Add configuration details in *conf.json*
+# Configuration
+
+Add configuration details in *conf.json*
 
 ```json
 {
@@ -53,7 +55,7 @@ Installing dependencies on OSX is a bit trickier.
     "dbHost":"db_host_name",
     "thumbQuality":80,
     "publicAlbum": 0
-}
+}```
 
 SSH password can be left blank, as LycheeUpload tries to use SSH keys present in the system for authentication. If that fails, it will prompt to enter a password upon connecting.
 
