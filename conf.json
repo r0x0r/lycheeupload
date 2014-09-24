@@ -1,8 +1,12 @@
 {
-    "db":"lychee",
-    "dbUser":"lychee",
-    "dbPassword":"cheely",
-    "dbHost":"localhost",
+    "server":"ssh_server_address",
+    "username":"username",
+    "password":"ssh_password_can_be_left_blank",
+    "path":"/remote_path_to_lychee_installation/",
+    "db":"db_name",
+    "dbUser":"db_username",
+    "dbPassword":"db_password",
+    "dbHost":"db_host_name",
     "thumbQuality":80,
     "publicAlbum": 0
 }
