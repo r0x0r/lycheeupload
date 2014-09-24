@@ -29,7 +29,7 @@ Install the following
 
 Installing dependencies on OSX is a bit trickier.
 
-First you have to have Command Line Tools for Xcode installed. Go to [Downloads for Apple developers](http://developer.apple.com/downloads/index.action). Download and install Command Line Tools for Xcode.
+First you have to have Command Line Tools for Xcode installed. Go to [Downloads for Apple developers](http://developer.apple.com/downloads/index.action), download and install Command Line Tools for Xcode.
 
 Install *pip* if you do not have it already
 
