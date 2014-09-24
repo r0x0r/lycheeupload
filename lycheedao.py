@@ -1,10 +1,13 @@
 # -*- coding: utf-8 -*-
 
-import MySQLdb
+import mysql.connector
 import datetime
 import traceback
-from dateutil.parser import parse
+import logging
 
+from conf import conf
+
+logger = logging.getLogger(__name__)
 
 class LycheeDAO:
 
@@ -16,21 +19,25 @@ class LycheeDAO:
     conf = None
     albumslist = {}
 
-    def __init__(self, conf):
+    def __init__(self):
         """
         Takes a dictionnary of conf as input
         """
+        logger.setLevel(conf["verbose"])
 
-        self.conf = conf
-        self.db = MySQLdb.connect(host=self.conf["dbHost"],
-                                  user=self.conf["dbUser"],
-                                  passwd=self.conf["dbPassword"],
-                                  db=self.conf["db"])
+        try:
+            self.db = mysql.connector.connect(host=conf["dbHost"],
+                                              user=conf["dbUser"],
+                                              passwd=conf["dbPassword"],
+                                              db=conf["db"],
+                                              charset='utf8',
+                                              use_unicode=True)
 
-        if self.conf["dropdb"]:
-            self.dropAll()
+            logger.info("Connected to database {}".format(conf["dbHost"]))
+            self.loadAlbumList()
+        except mysql.connector.Error as e:
+            raise Exception("Cannot connect to database server: {}".format(conf["dbHost"]))
 
-        self.loadAlbumList()
 
     def getAlbumMinMaxIds(self):
         """
@@ -52,9 +59,6 @@ class LycheeDAO:
             for row in rows:
                 max = row[0]
 
-            if self.conf["verbose"]:
-                print "INFO min, max album id: ", min, " to ", max
-
             res = min, max
         except Exception:
             res = -1, -1
@@ -63,46 +67,27 @@ class LycheeDAO:
         finally:
             return res
 
-    def updateAlbumDate(self, albumid, newdate):
+
+    def updateAlbumDate(self, albumid, date):
         """
         Update album date to an arbitrary date
         """
         res = True
-        qry = "update lychee_albums set sysstamp= '" + newdate.strftime('%s') + "' where id=" + str(albumid)
+        query = "update lychee_albums set sysstamp= '" + date.strftime('%s') + "' where id=" + str(albumid)
         try:
             cur = self.db.cursor()
-            cur.execute(qry)
+            cur.execute(query)
             self.db.commit()
-            if self.conf["verbose"]:
-                print "INFO album id sysstamp changed to: ", newdate
+
+            logger.debug("Album {} datetime changed to: {}".format(albumid, date))
         except Exception:
             res = False
-            print "updateAlbumDate", Exception
-            traceback.print_exc()
+            logger.error('Failed to update album date', exc_info=True)
+
         finally:
             return res
 
-    def changeAlbumId(self, oldid, newid):
-        """
-        Change albums id based on album titles (to affect display order)
-        """
-        res = True
-        photo_query = "update lychee_photos set album = " + str(newid) + " where album = " + str(oldid)
-        album_query = "update lychee_albums set id = " + str(newid) + " where id = " + str(oldid)
-        try:
-            cur = self.db.cursor()
-            cur.execute(photo_query)
-            cur.execute(album_query)
-            self.db.commit()
-            if self.conf["verbose"]:
-                print "INFO album id changed: ", oldid, " to ", newid
-        except Exception:
-            res = False
-            print "changeAlbumId", Exception
-            print "ERROR album id changed: ", oldid, " to ", newid
-            traceback.print_exc()
-        finally:
-            return res
+
 
     def loadAlbumList(self):
         """
@@ -117,21 +102,25 @@ class LycheeDAO:
         for row in rows:
             self.albumslist[row[0]] = row[1]
 
-        if self.conf['verbose']:
-            print "INFO album list in db:", self.albumslist
+        logger.debug(self.albumslist)
+
         return self.albumslist
+
 
     def albumExists(self, album):
         """
-        Check if an album exists based on its name
-        Parameters: an album properties list. At least the name should be specified
-        Returns None or the albumid if it exists
+        Check against its name if an album exists
+        Parameters:
+        None or the albumid if it exists
+        :param album: an album object.
+        :return: album id or None if the album does not exist
         """
 
-        if album['name'] in self.albumslist.keys():
+        if album['name'] and album['name'] in self.albumslist.keys():
             return self.albumslist[album['name']]
         else:
             return None
+
 
     def photoExists(self, photo):
         """
@@ -165,9 +154,10 @@ class LycheeDAO:
         Returns the created albumid or None
         """
         album['id'] = None
-        query = ("insert into lychee_albums (title, sysstamp, public, password) values ('" +
-                 album['name'] + "','" + datetime.datetime.now().strftime('%s') + "'," +
-                 str(self.conf["publicAlbum"]) + ", NULL)")
+        query = "INSERT INTO lychee_albums (title, sysstamp, public, password) " \
+                "VALUES ('{}', '{}', '{}', NULL)".format(album['name'],
+                                                         datetime.datetime.now().strftime('%s'),
+                                                         conf["publicAlbum"])
         try:
             cur = self.db.cursor()
             cur.execute(query)
@@ -178,15 +168,15 @@ class LycheeDAO:
             row = cur.fetchone()
             self.albumslist['name'] = row[0]
             album['id'] = row[0]
-            if self.conf["verbose"]:
-                print "INFO album created:", album
+
+            logger.info("Album {} created".format(album["name"]))
 
         except Exception:
-            print "createAlbum", Exception
-            traceback.print_exc()
+            logger.error('Failed to create album #{} {}'.format(album["id"], album["name"]), exc_info=True)
             album['id'] = None
         finally:
             return album['id']
+
 
     def eraseAlbum(self, album):
         """
@@ -206,32 +196,15 @@ class LycheeDAO:
                 res.append(row[0])
             cur.execute(query)
             self.db.commit()
-            if self.conf["verbose"]:
-                print "INFO album erased: ", album
+
+            logger.info("Album {} deleted.".format(album["name"]))
         except Exception:
-            print "eraseAlbum", Exception
-            traceback.print_exc()
+            logger.error('Failed to delete album #{} {}'.format(album["id"], album["name"]), exc_info=True)
+
         finally:
             return res
 
-    def listAllPhoto(self):
-        """
-        Lists all photos in leeche db (used to delete all files)
-        Return a photo url list
-        """
-        res = []
-        selquery = "select url from lychee_photos"
-        try:
-            cur = self.db.cursor()
-            cur.execute(selquery)
-            rows = cur.fetchall()
-            for row in rows:
-                res.append(row[0])
-        except Exception:
-            print "listAllPhoto", Exception
-            traceback.print_exc()
-        finally:
-            return res
+
 
     def addFileToAlbum(self, photo):
         """
@@ -240,56 +213,35 @@ class LycheeDAO:
         - photo: a valid LycheePhoto object
         Returns a boolean
         """
-        res = True
-        # print photo
         try:
-            stamp = parse(photo.exif.takedate + ' ' + photo.exif.taketime).strftime('%s')
-        except Exception:
-            stamp = datetime.datetime.now().strftime('%s')
+            query = ("insert into lychee_photos " +
+                     "(id, url, public, type, width, height, " +
+                     "size, star, " +
+                     "thumbUrl, album, iso, aperture, make, " +
+                     "model, shutter, focal, takestamp, " +
+                     "description, title, checksum) " +
+                     "values " +
+                     "({}, '{}', {}, '{}', {}, {}, " +
+                     "'{}', {}, " +
+                     "'{}', '{}', '{}', '{}', '{}', " +
+                     "'{}', '{}', '{}', '{}', " +
+                     "'{}', '{}', '{}')"
+                     ).format(photo.id, photo.url, conf["publicAlbum"], photo.type, photo.width, photo.height,
+                              photo.size, photo.star,
+                              photo.url, photo.albumid, photo.exif.iso, photo.exif.aperture, photo.exif.make,
+                              photo.exif.model, photo.exif.shutter, photo.exif.focal, photo.datetime.strftime("%s"),
+                              photo.description, photo.originalname, photo.checksum)
 
-        query = ("insert into lychee_photos " +
-                 "(id, url, public, type, width, height, " +
-                 "size, star, " +
-                 "thumbUrl, album,iso, aperture, make, " +
-                 "model, shutter, focal, takestamp, " +
-                 "description, title) " +
-                 "values " +
-                 "({}, '{}', {}, '{}', {}, {}, " +
-                 "'{}', {}, " +
-                 "'{}', '{}', '{}', '{}', '{}', " +
-                 "'{}', '{}', '{}', '{}', " +
-                 "'{}', '{}')"
-                 ).format(photo.id, photo.url, self.conf["publicAlbum"], photo.type, photo.width, photo.height,
-                          photo.size, photo.star,
-                          photo.thumbUrl, photo.albumid, photo.exif.iso, photo.exif.aperture, photo.exif.make,
-                          photo.exif.model, photo.exif.shutter, photo.exif.focal, stamp,
-                          photo.description, photo.originalname)
-        # print query
-
-        try:
             cur = self.db.cursor()
-            res = cur.execute(query)
+            cur.execute(query)
             self.db.commit()
-        except Exception:
-            print "addFileToAlbum", Exception
-            traceback.print_exc()
-            res = False
-        finally:
-            return res
 
-    def reinitAlbumAutoIncrement(self):
+            return True
+        except Exception as e:
+            logger.error("Inserting photo {} into database failed".format(photo.id))
 
-        min, max = self.getAlbumMinMaxIds()
-        qry = "alter table lychee_albums AUTO_INCREMENT=" + str(max + 1)
-        try:
-            cur = self.db.cursor()
-            cur.execute(qry)
-            self.db.commit()
-            if self.conf['verbose']:
-                print "INFO: reinit auto increment to", str(max + 1)
-        except Exception:
-            print "reinitAlbumAutoIncrement", Exception
-            traceback.print_exc()
+            return False
+
 
     def close(self):
         """
@@ -299,16 +251,3 @@ class LycheeDAO:
         if self.db:
             self.db.close()
 
-    def dropAll(self):
-        """
-        Drop all albums and photos from DB
-        Returns nothing
-        """
-        try:
-            cur = self.db.cursor()
-            cur.execute("delete from lychee_albums")
-            cur.execute("delete from lychee_photos")
-            self.db.commit()
-        except Exception:
-            print "dropAll", Exception
-            traceback.print_exc()

@@ -1,11 +1,19 @@
+# -*- coding: utf-8 -*-
 
 import time
+import tempfile
 import hashlib
 import os
 import mimetypes
+import logging
+import datetime
+
 from PIL import Image
 from PIL.ExifTags import TAGS
-import datetime
+
+from conf import conf
+
+logger = logging.getLogger(__name__)
 
 
 class ExifData:
@@ -16,12 +24,10 @@ class ExifData:
     @property
     def takedate(self):
         """I'm the 'x' property."""
-        #print "ROOOOOOHHHHHHHHHHHHHHHHHHHHHHH"
         return self._takedate.replace(':', '-')
 
     @takedate.setter
     def takedate(self, value):
-        #print "RAHHHHHHHHHHHHHHHHHHHHHHH"
         self._takedate = value.replace(':', '-')
 
     iso = ""
@@ -54,6 +60,9 @@ class LycheePhoto:
     Use to store photo data
     """
 
+    SMALL_THUMB_SIZE = (200, 200)
+    BIG_THUMB_SIZE = (400, 400)
+
     originalname = ""  # import_name
     originalpath = ""
     id = ""
@@ -66,20 +75,21 @@ class LycheePhoto:
     url = ""
     public = 0  # private by default
     type = ""
-    width = ""
-    height = ""
-    size = ""
+    width = None
+    height = None
+    size = None
     star = 0  # no star by default
-    thumbUrl = ""
+    thumb2xUrl = ""
     srcfullpath = ""
     destfullpath = ""
     exif = None
-    sysdate = ""
-    systime = ""
+    datetime = None
+    checksum = None
 
-    def __init__(self, conf, photoname, album):
+    def __init__(self, photoname, album):
+        logger.setLevel(conf["verbose"])
+
         # Parameters storage
-        self.conf = conf
         self.originalname = photoname
         self.originalpath = album['path']
         self.albumid = album['id']
@@ -101,20 +111,18 @@ class LycheePhoto:
 
         ext = os.path.splitext(photoname)[1]
         self.url = ''.join([crypted, ext]).lower()
-        self.thumbUrl = self.url
+        self.thumb2xUrl = ''.join([crypted, "@2x", ext]).lower()
+
 
         # src and dest fullpath
         self.srcfullpath = os.path.join(self.originalpath, self.originalname)
-        self.destfullpath = os.path.join(self.conf["lycheepath"], "uploads", "big", self.url)
-
-        #thumbnails already in place (see makeThumbnail)
+        self.destfullpath = os.path.join(conf["path"], "uploads", "big", self.url)
 
         # Auto file some properties
         self.type = mimetypes.guess_type(self.originalname, False)[0]
         self.size = os.path.getsize(self.srcfullpath)
         self.size = str(self.size/1024) + " KB"
-        self.sysdate = datetime.date.today().isoformat()
-        self.systime = datetime.datetime.now().strftime('%H:%M:%S')
+        self.datetime = datetime.datetime.now()
 
         # Exif Data Parsing
         self.exif = ExifData()
@@ -145,14 +153,96 @@ class LycheePhoto:
                         if decode == "ExposureTime":
                             self.exif.shutter = value
                         if decode == "DateTime":
-                            self.exif._takedate = value.split(" ")[0]
-                            self.sysdate = self.exif.takedate
-                        if decode == "DateTime":
-                            self.exif.taketime = value.split(" ")[1]
-                            self.systime = self.exif.taketime
-                    self.description = self.sysdate + " " + self.systime
+                            self.datetime = datetime.datetime.strptime(value, '%Y:%m:%d %H:%M:%S')
+
+                    self.description = self.datetime
+
         except IOError:
-            print 'IOERROR ' + self.srcfullpath
+            logger.error("IOError", )
+
+        self.thumbnailfullpath = self.generateThumbnail(self.SMALL_THUMB_SIZE)
+        self.thumbnailx2fullpath = self.generateThumbnail(self.BIG_THUMB_SIZE)
+
+        # Generate SHA1 hash
+        self.checksum = self.generateHash(self.srcfullpath)
+
+
+    def generateThumbnail(self, res):
+        """
+        Create the thumbnail of a given photo
+        Parameters:
+        - res: should be a set of h and v res (640, 480)
+        Returns the fullpath of the thuumbnail
+        """
+
+        if self.width > self.height:
+            delta = self.width - self.height
+            left = int(delta / 2)
+            upper = 0
+            right = self.height + left
+            lower = self.height
+        else:
+            delta = self.height - self.width
+            left = 0
+            upper = int(delta / 2)
+            right = self.width
+            lower = self.width + upper
+
+        tempimage = tempfile.NamedTemporaryFile(delete=False)
+        destimage = tempimage.name
+        tempimage.close()
+
+        img = Image.open(self.srcfullpath)
+        img = img.crop((left, upper, right, lower))
+        img.thumbnail(res, Image.ANTIALIAS)
+        img.save(destimage, "JPEG", quality=99)
+        return destimage
+
+    def cleanup(self):
+        """
+        Delete thumbnail files
+        """
+        os.remove(self.thumbnailfullpath)
+        os.remove(self.thumbnailx2fullpath)
+
+
+    def rotatephoto(self, photo, rotation):
+        # rotate main photo
+        img = Image.open(photo.destfullpath)
+        img2 = img.rotate(rotation)
+        img2.save(photo.destfullpath, quality=99)
+        # rotate Thumbnails
+        img = Image.open(photo.thumbnailx2fullpath)
+        img2 = img.rotate(rotation)
+        img2.save(photo.thumbnailx2fullpath, quality=99)
+        img = Image.open(photo.thumbnailfullpath)
+        img2.rotate(rotation)
+        img2.save(photo.thumbnailfullpath, quality=99)
+
+    def adjustRotation(self, photo):
+        """
+        Rotates photos according to the exif orienttaion tag
+        Returns nothing
+        """
+        if photo.exif.orientation not in (0, 1):
+            # There is somthing to do
+            if photo.exif.orientation == 6:
+                # rotate 90° clockwise
+                # AND LOOSE EXIF DATA
+                self.rotatephoto(photo, -90)
+            if photo.exif.orientation == 8:
+                # rotate 90° counterclockwise
+                # AND LOOSE EXIF DATA
+                self.rotatephoto(photo, 90)
+
+
+    def generateHash(self, filePath):
+        sha1 = hashlib.sha1()
+
+        with open(filePath, 'rb') as f:
+            sha1.update(f.read())
+            return sha1.hexdigest()
+
 
     def __str__(self):
             res = ""
@@ -175,7 +265,6 @@ class LycheePhoto:
             res += "thumbUrl:" + str(self.thumbUrl) + "\n"
             res += "srcfullpath:" + str(self.srcfullpath) + "\n"
             res += "destfullpath:" + str(self.destfullpath) + "\n"
-            res += "sysdate:" + self.sysdate + "\n"
-            res += "systime:" + self.systime + "\n"
+            res += "datetime:" + self.datetime + "\n"
             res += "Exif: \n" + str(self.exif) + "\n"
             return res
