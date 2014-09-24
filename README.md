@@ -55,7 +55,8 @@ Add configuration details in *conf.json*
     "dbHost":"db_host_name",
     "thumbQuality":80,
     "publicAlbum": 0
-}```
+}
+```
 
 SSH password can be left blank, as LycheeUpload tries to use SSH keys present in the system for authentication. If that fails, it will prompt to enter a password upon connecting.
 
