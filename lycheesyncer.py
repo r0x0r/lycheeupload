@@ -24,10 +24,14 @@ class LycheeSyncer:
     ssh = {}
 
     def __init__(self):
-        self.ssh = ssh.SSH()
-        self.dao = LycheeDAO()
         logger.setLevel(conf["verbose"])
+        self.ssh = ssh.SSH()
 
+        if self.ssh.loadDbConfig():
+            self.dao = LycheeDAO()
+        else:
+            raise Exception("Database configuration cannot be loaded from the remote server. Please check the path to "
+                            "Lychee installation")
 
     def getAlbumNameFromPath(self, album):
         """
@@ -68,7 +72,6 @@ class LycheeSyncer:
             album['id'] = self.dao.createAlbum(album)
 
         return album['id']
-
 
 
     def uploadPhoto(self, photo):
@@ -161,7 +164,7 @@ class LycheeSyncer:
                 album['name'] = self.getAlbumNameFromPath(album)
 
                 if album['path'] == conf['srcdir']:
-                    album['id'] = 0 # photos in the root, go to unsorted
+                    album['id'] = 0  # photos in the root, go to unsorted
                 else:
                     album['id'] = self.dao.albumExists(album)
 
@@ -191,7 +194,7 @@ class LycheeSyncer:
                             file_name = os.path.basename(photo.srcfullpath)
                             logger.info("Photo {}/{} already exists".format(album['name'], file_name))
 
-                if album['id']: # set correct album date
+                if album['id']:  # set correct album date
                     self.dao.updateAlbumDate(album['id'], album["date"])
 
         self.dao.close()

@@ -29,7 +29,7 @@ class LycheeDAO:
             self.db = mysql.connector.connect(host=conf["dbHost"],
                                               user=conf["dbUser"],
                                               passwd=conf["dbPassword"],
-                                              db=conf["db"],
+                                              db=conf["dbName"],
                                               charset='utf8',
                                               use_unicode=True)
 
