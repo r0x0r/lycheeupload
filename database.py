@@ -9,7 +9,7 @@ from conf import conf
 
 logger = logging.getLogger(__name__)
 
-class LycheeDAO:
+class Database:
 
     """
     Implements linking with Lychee DB

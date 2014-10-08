@@ -1,203 +1,90 @@
+#!/bin/python
 # -*- coding: utf-8 -*-
+"""
+lychee upload
+v0.9
+2014 Roman Sirokov
 
+Imports images from a location on hard drive to the Lychee installation on a remote server via SSH.
+
+Based on lycheesync by Gustave Paté
+https://github.com/GustavePate/lycheesync
+
+"""
+
+
+import argparse
 import os
-import traceback
+import sys
+import re
 import logging
-import ssh
 
-from lycheedao import LycheeDAO
-from lycheemodel import LycheePhoto
-from conf import conf
+import lycheeupload
+from conf import *
 
+
+logging.basicConfig(level=logging.WARNING, format='%(levelname)s: %(message)s')
 logger = logging.getLogger(__name__)
 
 
-class LycheeUpload:
-    """
-    This class contains the logic behind this program
-    It consist mainly in filesystem operations
-    It relies on:
-    - LycheeDAO for dtabases operations
-    - LycheePhoto to store (and compute) photos propreties
-    """
-
-    def __init__(self):
-        logger.setLevel(conf.verbose)
-        self.ssh = ssh.SSH()
-
-        if self.ssh.loadDbConfig():
-            self.dao = LycheeDAO()
-        else:
-            raise Exception("Database configuration cannot be loaded from the remote server. Please check the path to "
-                            "Lychee installation")
-
-    def getAlbumNameFromPath(self, album):
-        """
-        build a lychee compatible albumname from an albumpath (relative to the srcdir main argument)
-        Takes an album properties list  as input. At least the path sould be specified (relative albumpath)
-        Returns a string, the lychee album name
-        """
-
-        album['name'] = album['relpath'].split(os.sep)[-1]
-        return album['name']
-
-    def isAPhoto(self, file):
-        """
-        Determine if the filename passed is a photo or not based on the file extension
-        Takes a string  as input (a file name)
-        Returns a boolean
-        """
-        validimgext = ['.jpg', '.jpeg', '.gif', '.png']
-        ext = os.path.splitext(file)[-1].lower()
-        return (ext in validimgext)
-
-    def albumExists(self, album):
-        """
-        Takes an album properties list  as input. At least the relpath sould be specified (relative albumpath)
-        Returns an albumid or None if album does not exists
-        """
-
-    def createAlbum(self, album):
-        """
-        Creates an album
-        Inputs:
-        - album: an album properties list. at least path should be specified (relative albumpath)
-        Returns an albumid or None if album does not exists
-        """
-        album['id'] = None
-        album['name'] = self.getAlbumNameFromPath(album)
-        if album['name'] != "":
-            album['id'] = self.dao.createAlbum(album)
-
-        return album['id']
+def main():
+    try:
+        s = lycheeupload.LycheeUpload()
+        s.sync()
+    except Exception as e:
+        logger.error(e, exc_info=conf.verbose==logging.INFO)
+        sys.exit(1)
 
 
-    def uploadPhoto(self, photo):
-        """
-        add a file to an album, the albumid must be previously stored in the LycheePhoto parameter
-        Parameters:
-        - photo: a valid LycheePhoto object
-        Returns True if everything went ok
-        """
-        album_name = os.path.dirname(photo.srcfullpath).split(os.sep)[-1]
-        file_name = os.path.basename(photo.srcfullpath)
+def parse_arguments():
+    parser = argparse.ArgumentParser(description=("Export all photos in the local photo directory" +
+                                                  " recursively to Lychee. Directories are converted to albums."))
+    parser.add_argument('server', metavar='username@hostname:path', type=str, nargs=1,
+                        help='Server connection string with a full path to the directory where Lychee is installed.')
+    parser.add_argument('-d', '--dir', help='path to the photo directory where to export photos from.', type=str)
+    parser.add_argument('-r', '--replace', help="replace albums in Lychee with local ones", action='store_true')
+    parser.add_argument('-p', '--public', help="make uploaded photos public", action='store_true')
+    parser.add_argument('-v', '--verbose', help='print verbose messages', action='store_true')
+    args = parser.parse_args()
 
-        try:
-            thumbnailPath = os.path.join(conf.path, "uploads", "thumb")
+    if args.dir:
+        if not os.path.exists(args.dir):
+            logger.error("Photo directory does not exist:" + args.dir)
+            return False
+        conf.srcdir = args.dir
+    else:
+        logger.error("Please specify a directory to export photos from")
+        return False
 
-            # upload photo
-            self.ssh.put(photo.srcfullpath, photo.destfullpath)
-            self.ssh.put(photo.thumbnailfullpath, os.path.join(thumbnailPath, photo.url))
-            self.ssh.put(photo.thumbnailx2fullpath, os.path.join(thumbnailPath, photo.thumb2xUrl))
-
-            if self.dao.addFileToAlbum(photo):
-                logger.info("Uploaded file {}/{}".format(album_name, file_name))
-                return True
-            else:
-                self.ssh.remove(photo.destfullpath)
-                self.ssh.remove(os.path.join(thumbnailPath, photo.url))
-                self.ssh.remove(os.path.join(thumbnailPath, photo.thumb2xUrl))
-
-                return False
-
-            # delete thumbnails
-            photo.cleanup()
-
-            return True
-        except Exception:
-            logger.error("Uploading photo {}/{} failed".format(album_name, file_name))
-
+    if args.server:
+        if not parse_server_string(args.server[0]):
+            logger.error("Server string must be username@hostname:path format")
             return False
 
+    conf.replace = args.replace
 
-    def deleteFiles(self, filelist):
-        """
-        Delete files in the Lychee file tree (uploads/big and uploads/thumbnails)
-        Give it the file name and it will delete relatives files and thumbnails
-        Parameters:
-        - filelist: a list of filenames
-        Returns nothing
-        """
+    if args.verbose:
+        conf.verbose = logging.INFO
 
-        for url in filelist:
-            if self.isAPhoto(url):
-                thumbpath = os.path.join(conf.path, "uploads", "thumb", url)
-                filesplit = os.path.splitext(url)
-                thumb2path = ''.join([filesplit[0], "@2x", filesplit[1]]).lower()
-                thumb2path = os.path.join(conf.path, "uploads", "thumb", thumb2path)
-                bigpath = os.path.join(conf.path, "uploads", "big", url)
-
-                self.ssh.remove(thumbpath)
-                self.ssh.remove(thumb2path)
-                self.ssh.remove(bigpath)
+    return True
 
 
-    def sync(self):
-        """
-        Program main loop
-        Scans files to add in the sourcedirectory and add them to Lychee
-        according to the conf file and given parameters
-        Returns nothing
-        """
+def parse_server_string(server_string):
+    match = re.match("(.+)@([\w\d\.]+):(.+)", server_string)
 
-        print("Uploading photos...")
+    if match:
+        conf.username = match.group(1)
+        conf.server = match.group(2)
+        conf.path = match.group(3)
 
-        # Load db
-        createdalbums = 0
-        discoveredphotos = 0
-        importedphotos = 0
-        album = {}
-        # walkthrough each file / dir of the srcdir
-        for root, dirs, files in os.walk(conf.srcdir):
+        return True
+    else:
+        return False
 
-            # Init album data
-            album['id'] = None
-            album['name'] = None
-            album['path'] = None
-            album['relpath'] = None  # path relative to srcdir
-            album['date'] = None
 
-            # if a there is at least one photo in the files
-            if any([self.isAPhoto(f) for f in files]):
-                album['path'] = root
-                album['relpath'] = os.path.relpath(album['path'], conf.srcdir)
-                album['name'] = self.getAlbumNameFromPath(album)
 
-                if album['path'] == conf.srcdir:
-                    album['id'] = 0  # photos in the root, go to unsorted
-                else:
-                    album['id'] = self.dao.albumExists(album)
-
-                if album['id'] is None:
-                    # create album
-                    album['id'] = self.createAlbum(album)
-                    createdalbums += 1
-                elif album['id'] and conf.replace:
-                    # drop album photos
-                    filelist = self.dao.eraseAlbum(album)
-                    self.deleteFiles(filelist)
-
-                # Albums are created or emptied, now take care of photos
-                for f in files:
-                    if self.isAPhoto(f):
-
-                        discoveredphotos += 1
-                        photo = LycheePhoto(f, album)
-
-                        if album['date'] is None or album['date'] < photo.datetime:
-                            album['date'] = photo.datetime
-
-                        if not self.dao.photoExists(photo):
-                            if self.uploadPhoto(photo):
-                                importedphotos += 1
-                        else:
-                            file_name = os.path.basename(photo.srcfullpath)
-                            logger.info("Photo {}/{} already exists".format(album['name'], file_name))
-
-                if album['id']:  # set correct album date
-                    self.dao.updateAlbumDate(album['id'], album["date"])
-
-        self.dao.close()
-
-        # Final report
-        print "{} out of {} photos imported".format(importedphotos, discoveredphotos)
+if __name__ == '__main__':
+    if parse_arguments():
+        main()
+    else:
+        sys.exit(1)
