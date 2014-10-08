@@ -1,7 +1,0 @@
-{
-    "server":"ssh_server_address",
-    "username":"username",
-    "path":"/remote_path_to_lychee_installation/",
-    "thumbQuality":80,
-    "publicAlbum": 0
-}
