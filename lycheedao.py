@@ -15,28 +15,25 @@ class LycheeDAO:
     Implements linking with Lychee DB
     """
 
-    db = None
-    conf = None
-    albumslist = {}
-
     def __init__(self):
         """
         Takes a dictionnary of conf as input
         """
-        logger.setLevel(conf["verbose"])
+        logger.setLevel(conf.verbose)
 
         try:
-            self.db = mysql.connector.connect(host=conf["dbHost"],
-                                              user=conf["dbUser"],
-                                              passwd=conf["dbPassword"],
-                                              db=conf["dbName"],
+            self.albumslist = {}
+            self.db = mysql.connector.connect(host=conf.dbHost,
+                                              user=conf.dbUser,
+                                              passwd=conf.dbPassword,
+                                              db=conf.dbName,
                                               charset='utf8',
                                               use_unicode=True)
 
-            logger.info("Connected to database {}".format(conf["dbHost"]))
+            logger.info("Connected to database {}".format(conf.dbHost))
             self.loadAlbumList()
         except mysql.connector.Error as e:
-            raise Exception("Cannot connect to database server: {}".format(conf["dbHost"]))
+            raise Exception("Cannot connect to database server: {}".format(conf.dbHost))
 
 
     def getAlbumMinMaxIds(self):
@@ -157,7 +154,7 @@ class LycheeDAO:
         query = "INSERT INTO lychee_albums (title, sysstamp, public, password) " \
                 "VALUES ('{}', '{}', '{}', NULL)".format(album['name'],
                                                          datetime.datetime.now().strftime('%s'),
-                                                         conf["publicAlbum"])
+                                                         conf.publicAlbum)
         try:
             cur = self.db.cursor()
             cur.execute(query)
@@ -226,7 +223,7 @@ class LycheeDAO:
                      "'{}', '{}', '{}', '{}', '{}', " +
                      "'{}', '{}', '{}', '{}', " +
                      "'{}', '{}', '{}')"
-                     ).format(photo.id, photo.url, conf["publicAlbum"], photo.type, photo.width, photo.height,
+                     ).format(photo.id, photo.url, conf.publicAlbum, photo.type, photo.width, photo.height,
                               photo.size, photo.star,
                               photo.url, photo.albumid, photo.exif.iso, photo.exif.aperture, photo.exif.make,
                               photo.exif.model, photo.exif.shutter, photo.exif.focal, photo.datetime.strftime("%s"),

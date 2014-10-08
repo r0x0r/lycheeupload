@@ -12,7 +12,7 @@ from conf import conf
 logger = logging.getLogger(__name__)
 
 
-class LycheeSyncer:
+class LycheeUpload:
     """
     This class contains the logic behind this program
     It consist mainly in filesystem operations
@@ -21,10 +21,8 @@ class LycheeSyncer:
     - LycheePhoto to store (and compute) photos propreties
     """
 
-    ssh = {}
-
     def __init__(self):
-        logger.setLevel(conf["verbose"])
+        logger.setLevel(conf.verbose)
         self.ssh = ssh.SSH()
 
         if self.ssh.loadDbConfig():
@@ -85,7 +83,7 @@ class LycheeSyncer:
         file_name = os.path.basename(photo.srcfullpath)
 
         try:
-            thumbnailPath = os.path.join(conf["path"], "uploads", "thumb")
+            thumbnailPath = os.path.join(conf.path, "uploads", "thumb")
 
             # upload photo
             self.ssh.put(photo.srcfullpath, photo.destfullpath)
@@ -123,11 +121,11 @@ class LycheeSyncer:
 
         for url in filelist:
             if self.isAPhoto(url):
-                thumbpath = os.path.join(conf["path"], "uploads", "thumb", url)
+                thumbpath = os.path.join(conf.path, "uploads", "thumb", url)
                 filesplit = os.path.splitext(url)
                 thumb2path = ''.join([filesplit[0], "@2x", filesplit[1]]).lower()
-                thumb2path = os.path.join(conf["path"], "uploads", "thumb", thumb2path)
-                bigpath = os.path.join(conf["path"], "uploads", "big", url)
+                thumb2path = os.path.join(conf.path, "uploads", "thumb", thumb2path)
+                bigpath = os.path.join(conf.path, "uploads", "big", url)
 
                 self.ssh.remove(thumbpath)
                 self.ssh.remove(thumb2path)
@@ -142,13 +140,15 @@ class LycheeSyncer:
         Returns nothing
         """
 
+        print("Uploading photos...")
+
         # Load db
         createdalbums = 0
         discoveredphotos = 0
         importedphotos = 0
         album = {}
         # walkthrough each file / dir of the srcdir
-        for root, dirs, files in os.walk(conf['srcdir']):
+        for root, dirs, files in os.walk(conf.srcdir):
 
             # Init album data
             album['id'] = None
@@ -160,10 +160,10 @@ class LycheeSyncer:
             # if a there is at least one photo in the files
             if any([self.isAPhoto(f) for f in files]):
                 album['path'] = root
-                album['relpath'] = os.path.relpath(album['path'], conf['srcdir'])
+                album['relpath'] = os.path.relpath(album['path'], conf.srcdir)
                 album['name'] = self.getAlbumNameFromPath(album)
 
-                if album['path'] == conf['srcdir']:
+                if album['path'] == conf.srcdir:
                     album['id'] = 0  # photos in the root, go to unsorted
                 else:
                     album['id'] = self.dao.albumExists(album)
@@ -172,7 +172,7 @@ class LycheeSyncer:
                     # create album
                     album['id'] = self.createAlbum(album)
                     createdalbums += 1
-                elif album['id'] and conf['replace']:
+                elif album['id'] and conf.replace:
                     # drop album photos
                     filelist = self.dao.eraseAlbum(album)
                     self.deleteFiles(filelist)

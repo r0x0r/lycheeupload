@@ -18,7 +18,7 @@ import os
 import sys
 import logging
 
-import lycheesyncer
+import lycheeupload
 from conf import *
 
 
@@ -28,10 +28,10 @@ logger = logging.getLogger(__name__)
 
 def main():
     try:
-        s = lycheesyncer.LycheeSyncer()
+        s = lycheeupload.LycheeUpload()
         s.sync()
     except Exception as e:
-        logger.error(e)
+        logger.error(e, exc_info=True)
         sys.exit(1)
 
 
@@ -61,17 +61,17 @@ if __name__ == '__main__':
     else:
         load_conf(conf_file)
 
-    if conf["server"] == "ssh_server_address":
+    if conf.server == "ssh_server_address":
         logger.error("Please edit the configuration file {} first".format(conf_file))
         error = True
 
     if args.verbose:
-        conf["verbose"] = logging.INFO
+        conf.verbose = logging.INFO
 
     if error:
         sys.exit(1)
 
-    conf["srcdir"] = args.srcdir
-    conf["replace"] = args.replace
+    conf.srcdir = args.srcdir
+    conf.replace = args.replace
 
     main()

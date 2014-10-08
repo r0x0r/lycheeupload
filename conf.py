@@ -6,17 +6,17 @@ import logging
 CONF_FILE = "conf.json"
 
 
-class Conf(dict):
+class Conf:
     pass
 
 conf = Conf()
-conf["verbose"] = logging.ERROR
+conf.verbose = logging.ERROR
 
 
 def load_conf(conf_file):
     loaded_conf = json.load(open(conf_file, 'r'))
 
-    for k, v in loaded_conf.items():
-        conf[k] = v
+    for key, value in loaded_conf.items():
+        setattr(conf, key, value)
 
 

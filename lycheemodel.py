@@ -63,6 +63,7 @@ class LycheePhoto:
     SMALL_THUMB_SIZE = (200, 200)
     BIG_THUMB_SIZE = (400, 400)
 
+    """
     originalname = ""  # import_name
     originalpath = ""
     id = ""
@@ -85,9 +86,10 @@ class LycheePhoto:
     exif = None
     datetime = None
     checksum = None
+    """
 
     def __init__(self, photoname, album):
-        logger.setLevel(conf["verbose"])
+        logger.setLevel(conf.verbose)
 
         # Parameters storage
         self.originalname = photoname
@@ -98,6 +100,8 @@ class LycheePhoto:
         # if star in file name, photo is starred
         if ('star' in self.originalname) or ('cover' in self.originalname):
             self.star = 1
+        else:
+            self.star = 0
 
         # Compute Photo ID
         self.id = str(time.time())
@@ -116,7 +120,7 @@ class LycheePhoto:
 
         # src and dest fullpath
         self.srcfullpath = os.path.join(self.originalpath, self.originalname)
-        self.destfullpath = os.path.join(conf["path"], "uploads", "big", self.url)
+        self.destfullpath = os.path.join(conf.path, "uploads", "big", self.url)
 
         # Auto file some properties
         self.type = mimetypes.guess_type(self.originalname, False)[0]
@@ -127,7 +131,6 @@ class LycheePhoto:
         # Exif Data Parsing
         self.exif = ExifData()
         try:
-
             img = Image.open(self.srcfullpath)
             self.width, self.height = img.size
             if hasattr(img, '_getexif'):

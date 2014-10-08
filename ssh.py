@@ -17,12 +17,10 @@ class SSH:
     This class is used to connect to remote host and copy files
     """
 
-    _ssh = {}
-    _ftp = {}
-    _authentication_tries = 0
 
     def __init__(self):
-        logger.setLevel(conf["verbose"])
+        logger.setLevel(conf.verbose)
+        self._authentication_tries = 0
         self._ssh = paramiko.SSHClient()
         self._ssh.load_system_host_keys()
         self._ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
@@ -38,9 +36,9 @@ class SSH:
             return
         else:
             try:
-                self._ssh.connect(conf["server"], username=conf["username"], password=password)
+                self._ssh.connect(conf.server, username=conf.username, password=password)
                 self._ftp = self._ssh.open_sftp()
-                logger.info("Connected to " + conf["server"])
+                print("Connected to " + conf.server)
 
             except paramiko.AuthenticationException:
                 self._ssh.close()
@@ -54,10 +52,10 @@ class SSH:
             except paramiko.SSHException:
                 logger.info("Cannot connect to remote server. Retrying")
             except socket.gaierror:
-                raise Exception("Cannot connect to server {}".format(conf["server"]))
+                raise Exception("Cannot connect to server {}".format(conf.server))
 
     def disconnect(self):
-        logger.info("Disconnected from " + conf["server"])
+        logger.info("Disconnected from " + conf.server)
         self._ssh.close()
 
 
@@ -97,7 +95,7 @@ class SSH:
         :return True if configuration was read successfully. False otherwise
         """
 
-        config_file = os.path.join(conf["path"], "data", "config.php")
+        config_file = os.path.join(conf.path, "data", "config.php")
         with self._ftp.open(config_file) as f:
             for line in f:
                 match = re.match("\$(\w+)\s*=\s*\'(.+)\';.*", line)
@@ -105,11 +103,12 @@ class SSH:
                 if match:
                     key = match.group(1)
                     value = match.group(2)
-                    conf[key] = value
+                    setattr(conf, key, value)
+
 
         # Check that the all database variables were loaded from the configuration file
         keys = ['dbHost', 'dbUser', 'dbPassword', 'dbName']
-        return all([key in conf for key in keys])
+        return all([key in dir(conf) for key in keys])
 
 
 
