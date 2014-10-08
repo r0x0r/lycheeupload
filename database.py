@@ -154,7 +154,7 @@ class Database:
         query = "INSERT INTO lychee_albums (title, sysstamp, public, password) " \
                 "VALUES ('{}', '{}', '{}', NULL)".format(album['name'],
                                                          datetime.datetime.now().strftime('%s'),
-                                                         conf.publicAlbum)
+                                                         conf.public)
         try:
             cur = self.db.cursor()
             cur.execute(query)
@@ -223,7 +223,7 @@ class Database:
                      "'{}', '{}', '{}', '{}', '{}', " +
                      "'{}', '{}', '{}', '{}', " +
                      "'{}', '{}', '{}')"
-                     ).format(photo.id, photo.url, conf.publicAlbum, photo.type, photo.width, photo.height,
+                     ).format(photo.id, photo.url, conf.public, photo.type, photo.width, photo.height,
                               photo.size, photo.star,
                               photo.url, photo.albumid, photo.exif.iso, photo.exif.aperture, photo.exif.make,
                               photo.exif.model, photo.exif.shutter, photo.exif.focal, photo.datetime.strftime("%s"),

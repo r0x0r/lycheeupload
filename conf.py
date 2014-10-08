@@ -3,8 +3,6 @@ __author__ = 'roman'
 import json
 import logging
 
-CONF_FILE = "conf.json"
-
 
 class Conf:
     pass

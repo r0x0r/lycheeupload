@@ -39,34 +39,21 @@ Finally install dependencies using *pip*
 
 `sudo pip install mysql-connector-python paramiko Pillow`
 
-# Configuration
-
-Add configuration details in *conf.json*
-
-```json
-{
-    "server":"ssh_server_address",
-    "username":"username",
-    "path":"/remote_path_to_lychee_installation/",
-    "thumbQuality":80,
-    "publicAlbum": 0
-}
-```
-
-To make albums public, change publicAlbum to 1.
-
 
 # Usage
 
+`python lycheeupload.py [-h] [-d DIR] [-r] [-p] [-v] username@hostname:path 
 
-`python main.py src_dir [-r] [-c alternative_conf_file] [-v]`
+- `username@hostname:path` Server connection string with a full path to the directory where Lychee is installed. 
+-  `-h`, `--help`            show a help message
+-  `-d DIR`, `--dir DIR`     path to the photo directory where to export photos from.
+-  `-r`, `--replace`         replace albums in Lychee with local ones
+-  `-p`, `--public`          make uploaded photos public
+-  `-v`, `--verbose`         print verbose messages
 
-- `src_dir` - source directory with photos you want to upload to Lychee
-- `-r` - Replace mode. Albums that already exist in Lychee will be replaced with local ones
-- `-c alternative_conf_file` - Path to an alternative configuration file. By default *conf.json* is used.
-- `-v` - Verbose mode. LycheeUpload will report that it is doing. By default only errors are displayed.
+For example to import photos from the directory */home/user/photos/* to the remote server *example.com* with Lychee installed in the */home/user/mydomain.com/* directory, issue the following command
 
-
+`python lycheeupload.py -d /home/user/photos/ user@example.com:/home/user/mydomain.com/`
 
 
 

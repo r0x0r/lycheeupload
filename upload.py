@@ -4,8 +4,8 @@ import os
 import logging
 import ssh
 
-from lycheedao import LycheeDAO
-from lycheemodel import LycheePhoto
+from database import Database
+from photo import LycheePhoto
 from conf import conf
 
 logger = logging.getLogger(__name__)
@@ -25,7 +25,7 @@ class Upload:
         self.ssh = ssh.SSH()
 
         if self.ssh.loadDbConfig():
-            self.dao = LycheeDAO()
+            self.dao = Database()
         else:
             raise Exception("Lychee configuration file not found. Please check the path to Lychee installation")
 

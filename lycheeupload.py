@@ -1,9 +1,8 @@
 #!/bin/python
 # -*- coding: utf-8 -*-
 """
-lychee upload
-v0.9
-2014 Roman Sirokov
+lychee upload v1.0
+(C) 2014 Roman Sirokov
 
 Imports images from a location on hard drive to the Lychee installation on a remote server via SSH.
 
@@ -19,7 +18,7 @@ import sys
 import re
 import logging
 
-import lycheeupload
+import upload
 from conf import *
 
 
@@ -29,16 +28,16 @@ logger = logging.getLogger(__name__)
 
 def main():
     try:
-        s = lycheeupload.LycheeUpload()
-        s.sync()
+        u = upload.Upload()
+        u.sync()
     except Exception as e:
-        logger.error(e, exc_info=conf.verbose==logging.INFO)
+        logger.error(e, exc_info=(conf.verbose == logging.INFO))
         sys.exit(1)
 
 
 def parse_arguments():
-    parser = argparse.ArgumentParser(description=("Export all photos in the local photo directory" +
-                                                  " recursively to Lychee. Directories are converted to albums."))
+    parser = argparse.ArgumentParser(description=("Upload all the photos in the local photo directory and its "
+                                                  "sub-directories to Lychee. Directories are converted to albums."))
     parser.add_argument('server', metavar='username@hostname:path', type=str, nargs=1,
                         help='Server connection string with a full path to the directory where Lychee is installed.')
     parser.add_argument('-d', '--dir', help='path to the photo directory where to export photos from.', type=str)
@@ -58,10 +57,11 @@ def parse_arguments():
 
     if args.server:
         if not parse_server_string(args.server[0]):
-            logger.error("Server string must be username@hostname:path format")
+            logger.error("Server string must be in the username@hostname:path format")
             return False
 
     conf.replace = args.replace
+    conf.public = args.public
 
     if args.verbose:
         conf.verbose = logging.INFO
@@ -80,7 +80,6 @@ def parse_server_string(server_string):
         return True
     else:
         return False
-
 
 
 if __name__ == '__main__':

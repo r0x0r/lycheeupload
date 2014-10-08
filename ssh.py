@@ -96,19 +96,21 @@ class SSH:
         """
 
         config_file = os.path.join(conf.path, "data", "config.php")
-        with self._ftp.open(config_file) as f:
-            for line in f:
-                match = re.match("\$(\w+)\s*=\s*\'(.+)\';.*", line)
+        try:
+            with self._ftp.open(config_file) as f:
+                for line in f:
+                    match = re.match("\$(\w+)\s*=\s*\'(.+)\';.*", line)
 
-                if match:
-                    key = match.group(1)
-                    value = match.group(2)
-                    setattr(conf, key, value)
+                    if match:
+                        key = match.group(1)
+                        value = match.group(2)
+                        setattr(conf, key, value)
 
-
-        # Check that the all database variables were loaded from the configuration file
-        keys = ['dbHost', 'dbUser', 'dbPassword', 'dbName']
-        return all([key in dir(conf) for key in keys])
+            # Check that the all database variables were loaded from the configuration file
+            keys = ['dbHost', 'dbUser', 'dbPassword', 'dbName']
+            return all([key in dir(conf) for key in keys])
+        except IOError:
+            return False
 
 
 
