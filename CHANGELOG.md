@@ -1,3 +1,6 @@
+## 1.2
+- `New` Support for importing directly from iPhoto / Aperture libraries
+
 ## 1.0
 - `Improved` Better command line parameters parsing
 - `Improved` Changed file names. The launch file is now lycheeupload.py

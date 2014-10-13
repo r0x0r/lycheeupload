@@ -88,14 +88,13 @@ class LycheePhoto:
     checksum = None
     """
 
-    def __init__(self, photoname, album):
+    def __init__(self, full_path, album_id):
         logger.setLevel(conf.verbose)
 
         # Parameters storage
-        self.originalname = photoname
-        self.originalpath = album['path']
-        self.albumid = album['id']
-        self.albumname = album['name']
+        self.originalname = os.path.basename(full_path)
+        self.albumid = album_id
+        self.description = ""
 
         # if star in file name, photo is starred
         if ('star' in self.originalname) or ('cover' in self.originalname):
@@ -113,19 +112,18 @@ class LycheePhoto:
         m.update(self.id)
         crypted = m.hexdigest()
 
-        ext = os.path.splitext(photoname)[1]
+        ext = os.path.splitext(self.originalname)[1]
         self.url = ''.join([crypted, ext]).lower()
         self.thumb2xUrl = ''.join([crypted, "@2x", ext]).lower()
 
-
         # src and dest fullpath
-        self.srcfullpath = os.path.join(self.originalpath, self.originalname)
+        self.srcfullpath = full_path
         self.destfullpath = os.path.join(conf.path, "uploads", "big", self.url)
 
         # Auto file some properties
         self.type = mimetypes.guess_type(self.originalname, False)[0]
         self.size = os.path.getsize(self.srcfullpath)
-        self.size = str(self.size/1024) + " KB"
+        self.size = str(self.size / 1024) + " KB"
         self.datetime = datetime.datetime.now()
 
         # Exif Data Parsing
@@ -201,6 +199,7 @@ class LycheePhoto:
         img.save(destimage, "JPEG", quality=99)
         return destimage
 
+
     def cleanup(self):
         """
         Delete thumbnail files
@@ -250,9 +249,8 @@ class LycheePhoto:
     def __str__(self):
             res = ""
             res += "originalname:" + str(self.originalname) + "\n"
-            res += "originalpath:" + str(self.originalpath) + "\n"
             res += "id:" + str(self.id) + "\n"
-            res += "albumname:" + str(self.albumname) + "\n"
+            #res += "albumname:" + str(self.albumname) + "\n"
             res += "albumid:" + str(self.albumid) + "\n"
             res += "thumbnailfullpath:" + str(self.thumbnailfullpath) + "\n"
             res += "thumbnailx2fullpath:" + str(self.thumbnailx2fullpath) + "\n"

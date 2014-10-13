@@ -5,16 +5,12 @@ import logging
 
 
 class Conf:
+    IPHOTO_DEFAULT_PATH = "~/Pictures/iPhoto Library/"
+    APERTURE_DEFAULT_PATH = "~/Pictures/Aperture Library.aplibrary/"
     pass
 
 conf = Conf()
 conf.verbose = logging.ERROR
 
-
-def load_conf(conf_file):
-    loaded_conf = json.load(open(conf_file, 'r'))
-
-    for key, value in loaded_conf.items():
-        setattr(conf, key, value)
 
 

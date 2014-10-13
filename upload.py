@@ -30,45 +30,24 @@ class Upload:
             raise Exception("Lychee configuration file not found. Please check the path to Lychee installation")
 
 
-    def getAlbumNameFromPath(self, album):
-        """
-        build a lychee compatible albumname from an albumpath (relative to the srcdir main argument)
-        Takes an album properties list  as input. At least the path sould be specified (relative albumpath)
-        Returns a string, the lychee album name
-        """
-
-        album['name'] = album['relpath'].split(os.sep)[-1]
-        return album['name']
-
-    def isAPhoto(self, file):
-        """
-        Determine if the filename passed is a photo or not based on the file extension
-        Takes a string  as input (a file name)
-        Returns a boolean
-        """
-        validimgext = ['.jpg', '.jpeg', '.gif', '.png']
-        ext = os.path.splitext(file)[-1].lower()
-        return (ext in validimgext)
-
     def albumExists(self, album):
         """
         Takes an album properties list  as input. At least the relpath sould be specified (relative albumpath)
         Returns an albumid or None if album does not exists
         """
 
-    def createAlbum(self, album):
+    def createAlbum(self, album_name):
         """
         Creates an album
         Inputs:
         - album: an album properties list. at least path should be specified (relative albumpath)
         Returns an albumid or None if album does not exists
         """
-        album['id'] = None
-        album['name'] = self.getAlbumNameFromPath(album)
-        if album['name'] != "":
-            album['id'] = self.dao.createAlbum(album)
+        album_id = None
+        if album_name != "":
+            album_id = self.dao.createAlbum(album_name)
 
-        return album['id']
+        return album_id
 
 
     def uploadPhoto(self, photo):
@@ -131,72 +110,45 @@ class Upload:
                 self.ssh.remove(bigpath)
 
 
-    def sync(self):
-        """
-        Program main loop
-        Scans files to add in the sourcedirectory and add them to Lychee
-        according to the conf file and given parameters
-        Returns nothing
-        """
-
+    def upload(self, albums):
         print("Uploading photos...")
 
-        # Load db
-        createdalbums = 0
-        discoveredphotos = 0
-        importedphotos = 0
-        album = {}
-        # walkthrough each file / dir of the srcdir
-        for root, dirs, files in os.walk(conf.srcdir):
+        createdalbums, discoveredphotos, importedphotos = 0, 0, 0
 
-            # Init album data
-            album['id'] = None
-            album['name'] = None
-            album['path'] = None
-            album['relpath'] = None  # path relative to srcdir
-            album['date'] = None
+        for album, files in albums.items():
+            album_date = None
+            if album == "{unsorted}":
+                album_id = 0
+            else:
+                album_id = self.dao.albumExists(album)
 
-            # if a there is at least one photo in the files
-            if any([self.isAPhoto(f) for f in files]):
-                album['path'] = root
-                album['relpath'] = os.path.relpath(album['path'], conf.srcdir)
-                album['name'] = self.getAlbumNameFromPath(album)
+            if album_id is None: # create album
+                album_id = self.createAlbum(album)
+                createdalbums += 1
+            elif conf.replace: # drop album photos
+                filelist = self.dao.eraseAlbum(album)
+                self.deleteFiles(filelist)
 
-                if album['path'] == conf.srcdir:
-                    album['id'] = 0  # photos in the root, go to unsorted
+            for full_path in files:
+                discoveredphotos += 1
+                photo = LycheePhoto(full_path, album_id)
+
+                if album_date is None or album_date < photo.datetime:
+                    album_date = photo.datetime
+
+                if not self.dao.photoExists(photo):
+                    if self.uploadPhoto(photo):
+                        importedphotos += 1
                 else:
-                    album['id'] = self.dao.albumExists(album)
+                    file_name = os.path.basename(photo.srcfullpath)
+                    logger.info("Photo {}/{} already exists".format(album, file_name))
 
-                if album['id'] is None:
-                    # create album
-                    album['id'] = self.createAlbum(album)
-                    createdalbums += 1
-                elif album['id'] and conf.replace:
-                    # drop album photos
-                    filelist = self.dao.eraseAlbum(album)
-                    self.deleteFiles(filelist)
-
-                # Albums are created or emptied, now take care of photos
-                for f in files:
-                    if self.isAPhoto(f):
-
-                        discoveredphotos += 1
-                        photo = LycheePhoto(f, album)
-
-                        if album['date'] is None or album['date'] < photo.datetime:
-                            album['date'] = photo.datetime
-
-                        if not self.dao.photoExists(photo):
-                            if self.uploadPhoto(photo):
-                                importedphotos += 1
-                        else:
-                            file_name = os.path.basename(photo.srcfullpath)
-                            logger.info("Photo {}/{} already exists".format(album['name'], file_name))
-
-                if album['id']:  # set correct album date
-                    self.dao.updateAlbumDate(album['id'], album["date"])
+                if album_id:  # set correct album date
+                    self.dao.updateAlbumDate(album_id, album_date)
 
         self.dao.close()
 
         # Final report
         print "{} out of {} photos imported".format(importedphotos, discoveredphotos)
+
+

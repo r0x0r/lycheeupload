@@ -104,7 +104,7 @@ class Database:
         return self.albumslist
 
 
-    def albumExists(self, album):
+    def albumExists(self, album_name):
         """
         Check against its name if an album exists
         Parameters:
@@ -113,8 +113,8 @@ class Database:
         :return: album id or None if the album does not exist
         """
 
-        if album['name'] and album['name'] in self.albumslist.keys():
-            return self.albumslist[album['name']]
+        if album_name and album_name in self.albumslist.keys():
+            return self.albumslist[album_name]
         else:
             return None
 
@@ -143,16 +143,17 @@ class Database:
         finally:
             return res
 
-    def createAlbum(self, album):
+
+    def createAlbum(self, album_name):
         """
         Creates an album
         Parameter:
         - album: the album properties list, at least the name should be specified
         Returns the created albumid or None
         """
-        album['id'] = None
+        id = None
         query = "INSERT INTO lychee_albums (title, sysstamp, public, password) " \
-                "VALUES ('{}', '{}', '{}', NULL)".format(album['name'],
+                "VALUES ('{}', '{}', '{}', NULL)".format(album_name,
                                                          datetime.datetime.now().strftime('%s'),
                                                          conf.public)
         try:
@@ -160,46 +161,47 @@ class Database:
             cur.execute(query)
             self.db.commit()
 
-            query = "select id from lychee_albums where title='" + album['name'] + "'"
+            query = "select id from lychee_albums where title='" + album_name + "'"
             cur.execute(query)
             row = cur.fetchone()
             self.albumslist['name'] = row[0]
-            album['id'] = row[0]
+            id = row[0]
 
-            logger.info("Album {} created".format(album["name"]))
+            logger.info("Album {} created".format(album_name))
 
         except Exception:
-            logger.error('Failed to create album #{} {}'.format(album["id"], album["name"]), exc_info=True)
-            album['id'] = None
+            logger.error('Failed to create album #{} {}'.format(id, album_name), exc_info=True)
+            id = None
         finally:
-            return album['id']
+            return id
 
 
-    def eraseAlbum(self, album):
+    def eraseAlbum(self, id):
         """
         Deletes all photos of an album but don't delete the album itself
         Parameters:
         - album: the album properties list to erase.  At least its id must be provided
         Return list of the erased photo url
         """
-        res = []
-        query = "delete from lychee_photos where album = " + str(album['id']) + ''
-        selquery = "select url from lychee_photos where album = " + str(album['id']) + ''
+        query = "delete from lychee_photos where album = " + id + ''
+        selquery = "select url from lychee_photos where album = " + id + ''
+
+        file_list = []
         try:
             cur = self.db.cursor()
             cur.execute(selquery)
             rows = cur.fetchall()
             for row in rows:
-                res.append(row[0])
+                file_list.append(row[0])
             cur.execute(query)
             self.db.commit()
+            logger.info("Album #{} deleted.".format(id))
 
-            logger.info("Album {} deleted.".format(album["name"]))
+            return file_list
         except Exception:
-            logger.error('Failed to delete album #{} {}'.format(album["id"], album["name"]), exc_info=True)
+            logger.error('Failed to delete album #{}'.format(id), exc_info=True)
 
-        finally:
-            return res
+            return None
 
 
 
@@ -235,7 +237,7 @@ class Database:
 
             return True
         except Exception as e:
-            logger.error("Inserting photo {} into database failed".format(photo.id))
+            logger.error("Inserting photo {} into database failed".format(photo.id), exc_info=True)
 
             return False
 
