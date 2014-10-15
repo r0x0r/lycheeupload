@@ -57,36 +57,13 @@ class ExifData:
 
 class LycheePhoto:
     """
-    Use to store photo data
+    Store photo data such as location and file info, EXIF data, checksums and path to thumbnails. Checksum and
+    thumbnails are generated here.
     """
 
     SMALL_THUMB_SIZE = (200, 200)
     BIG_THUMB_SIZE = (400, 400)
 
-    """
-    originalname = ""  # import_name
-    originalpath = ""
-    id = ""
-    albumname = ""
-    albumid = ""
-    thumbnailfullpath = ""
-    thumbnailx2fullpath = ""
-    title = ""
-    description = ""
-    url = ""
-    public = 0  # private by default
-    type = ""
-    width = None
-    height = None
-    size = None
-    star = 0  # no star by default
-    thumb2xUrl = ""
-    srcfullpath = ""
-    destfullpath = ""
-    exif = None
-    datetime = None
-    checksum = None
-    """
 
     def __init__(self, full_path, album_id):
         logger.setLevel(conf.verbose)
@@ -202,10 +179,13 @@ class LycheePhoto:
 
     def cleanup(self):
         """
-        Delete thumbnail files
+        Delete thumbnail files from the local disk. Called after the photo was successfully uploaded.
         """
-        os.remove(self.thumbnailfullpath)
-        os.remove(self.thumbnailx2fullpath)
+        try:
+            os.remove(self.thumbnailfullpath)
+            os.remove(self.thumbnailx2fullpath)
+        except Exception:
+            logger.error("Cannot delete thumbnail {}".format(self.thumbnailfullpath), exc_info=True)
 
 
     def rotatephoto(self, photo, rotation):

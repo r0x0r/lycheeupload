@@ -98,8 +98,8 @@ def parse_arguments():
 
 def parse_server_string(server_string):
     """
-    Parse a server string user@host:path and store values in the global configuration
-    :param server_string:
+    Parse a server string and store values in the global configuration
+    :param server_string: Server string in the form of user@host:path
     :return: True if successful, False if parsing fails
     """
     match = re.match("(.+)@([\w\d\.]+):(.+)", server_string)
@@ -121,6 +121,8 @@ def parse_mac_arguments(args):
     :return:
     """
     conf.originals = args.originals
+
+    library_dir = None
 
     if args.iphoto:
         conf.source = "iPhoto"

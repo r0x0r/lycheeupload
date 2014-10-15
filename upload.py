@@ -13,11 +13,9 @@ logger = logging.getLogger(__name__)
 
 class Upload:
     """
-    This class contains the logic behind this program
-    It consist mainly in filesystem operations
-    It relies on:
-    - LycheeDAO for dtabases operations
-    - LycheePhoto to store (and compute) photos propreties
+    High-level logic for uploading images to the remote server. The class is responsible for initiating SSH and
+    database connections, checking whether albums exist and creating if needed and uploading photos to appropriate
+    albums.
     """
 
     def __init__(self):
@@ -30,18 +28,12 @@ class Upload:
             raise Exception("Lychee configuration file not found. Please check the path to Lychee installation")
 
 
-    def albumExists(self, album):
-        """
-        Takes an album properties list  as input. At least the relpath sould be specified (relative albumpath)
-        Returns an albumid or None if album does not exists
-        """
 
     def createAlbum(self, album_name):
         """
-        Creates an album
-        Inputs:
-        - album: an album properties list. at least path should be specified (relative albumpath)
-        Returns an albumid or None if album does not exists
+        Create a new album
+        :param album_name: The name of an album to create
+        :return: Album id. None if the album cannot be created
         """
         album_id = None
         if album_name != "":
@@ -52,10 +44,11 @@ class Upload:
 
     def uploadPhoto(self, photo):
         """
-        add a file to an album, the albumid must be previously stored in the LycheePhoto parameter
-        Parameters:
-        - photo: a valid LycheePhoto object
-        Returns True if everything went ok
+        Upload a photo to the remote server and add it to the album it belongs to in the database. If database update
+        fails for some reason, photos are deleted from the server.
+
+        :param photo: a valid LycheePhoto object
+        :return: True if everything went ok
         """
         album_name = os.path.dirname(photo.srcfullpath).split(os.sep)[-1]
         file_name = os.path.basename(photo.srcfullpath)
@@ -91,10 +84,7 @@ class Upload:
     def deleteFiles(self, filelist):
         """
         Delete files in the Lychee file tree (uploads/big and uploads/thumbnails)
-        Give it the file name and it will delete relatives files and thumbnails
-        Parameters:
-        - filelist: a list of filenames
-        Returns nothing
+        :param filelist: a list of filenames to delte
         """
 
         for url in filelist:
@@ -111,22 +101,28 @@ class Upload:
 
 
     def upload(self, albums):
+        """
+        Upload photos stored in the provided dictionary, create albums. Accept a dictionary of album names and image
+        paths as input parameter and convert each image path into a LycheePhoto object, which is passed to the
+        uploadPhoto funciton.
+        :param albums: a dictionary with albums and path names
+        """
         print("Uploading photos...")
 
         createdalbums, discoveredphotos, importedphotos = 0, 0, 0
 
-        for album, files in albums.items():
+        for album_name, files in albums.items():
             album_date = None
-            if album == "{unsorted}":
+            if album_name == "{unsorted}":
                 album_id = 0
             else:
-                album_id = self.dao.albumExists(album)
+                album_id = self.dao.albumExists(album_name)
 
             if album_id is None: # create album
-                album_id = self.createAlbum(album)
+                album_id = self.createAlbum(album_name)
                 createdalbums += 1
             elif conf.replace: # drop album photos
-                filelist = self.dao.eraseAlbum(album)
+                filelist = self.dao.eraseAlbum(album_id)
                 self.deleteFiles(filelist)
 
             for full_path in files:
@@ -141,7 +137,7 @@ class Upload:
                         importedphotos += 1
                 else:
                     file_name = os.path.basename(photo.srcfullpath)
-                    logger.info("Photo {}/{} already exists".format(album, file_name))
+                    logger.info("Photo {}/{} already exists".format(album_name, file_name))
 
                 if album_id:  # set correct album date
                     self.dao.updateAlbumDate(album_id, album_date)
