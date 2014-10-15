@@ -9,7 +9,7 @@ def get_photos():
     album names correspond to folders. Sub-folders are converted to regular albums, as Lychee does not support
     sub-albums. Files in the root directory are put into the Unsorted album ("{unsorted}" is the key name).
 
-    :return: dictionary with
+    :return: dictionary with album names and image paths.
     """
 
     albums = {}
@@ -38,6 +38,7 @@ def get_photos():
 def _get_album_name(rel_path):
     """
     Convert folder a file resides in into an album name
+    :param
     """
     return rel_path.split(os.sep)[-1]
 
