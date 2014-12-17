@@ -1,3 +1,7 @@
+## 1.2.5
+- `New` Support for medium sized files introduced in Lychee 2.7 
+- `Improved` Decreased the quality of generated thumbnails for smaller thumbnail sizes
+
 ## 1.2
 - `New` Support for importing directly from iPhoto / Aperture libraries
 

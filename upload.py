@@ -54,20 +54,23 @@ class Upload:
         file_name = os.path.basename(photo.srcfullpath)
 
         try:
-            thumbnailPath = os.path.join(conf.path, "uploads", "thumb")
+            thumbnail_path = os.path.join(conf.path, "uploads", "thumb")
+            medium_path = os.path.join(conf.path, "uploads", "medium")
 
             # upload photo
             self.ssh.put(photo.srcfullpath, photo.destfullpath)
-            self.ssh.put(photo.thumbnailfullpath, os.path.join(thumbnailPath, photo.url))
-            self.ssh.put(photo.thumbnailx2fullpath, os.path.join(thumbnailPath, photo.thumb2xUrl))
+            self.ssh.put(photo.medium_path, os.path.join(medium_path, photo.url))
+            self.ssh.put(photo.thumbnailfullpath, os.path.join(thumbnail_path, photo.url))
+            self.ssh.put(photo.thumbnailx2fullpath, os.path.join(thumbnail_path, photo.thumb2xUrl))
 
             if self.dao.addFileToAlbum(photo):
                 logger.info("Uploaded file {}/{}".format(album_name, file_name))
                 return True
             else:
                 self.ssh.remove(photo.destfullpath)
-                self.ssh.remove(os.path.join(thumbnailPath, photo.url))
-                self.ssh.remove(os.path.join(thumbnailPath, photo.thumb2xUrl))
+                self.ssh.remove(os.path.join(medium_path, photo.url))
+                self.ssh.remove(os.path.join(thumbnail_path, photo.url))
+                self.ssh.remove(os.path.join(thumbnail_path, photo.thumb2xUrl))
 
                 return False
 

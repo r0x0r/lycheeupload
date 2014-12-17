@@ -63,6 +63,8 @@ class LycheePhoto:
 
     SMALL_THUMB_SIZE = (200, 200)
     BIG_THUMB_SIZE = (400, 400)
+    MEDIUM_SIZE = (1920.0, 1080.0)
+    JPG_QUALITY = 80
 
 
     def __init__(self, full_path, album_id):
@@ -140,9 +142,22 @@ class LycheePhoto:
 
         self.thumbnailfullpath = self.generateThumbnail(self.SMALL_THUMB_SIZE)
         self.thumbnailx2fullpath = self.generateThumbnail(self.BIG_THUMB_SIZE)
+        self.medium_path = self.generateMediumRes(self.MEDIUM_SIZE)
 
         # Generate SHA1 hash
         self.checksum = self.generateHash(self.srcfullpath)
+
+
+    def generateMediumRes(self, res):
+        with tempfile.NamedTemporaryFile(delete=False) as temp_image:
+            img = Image.open(self.srcfullpath)
+            ratio = min(res[0] / img.size[0], res[1] / img.size[1])
+            new_size = tuple(int(ratio * size) for size in img.size)
+
+            medium_img = img.resize(new_size, Image.ANTIALIAS)
+            medium_img.save(temp_image.name, "JPEG", quality=self.JPG_QUALITY)
+
+            return temp_image.name
 
 
     def generateThumbnail(self, res):
@@ -173,7 +188,7 @@ class LycheePhoto:
         img = Image.open(self.srcfullpath)
         img = img.crop((left, upper, right, lower))
         img.thumbnail(res, Image.ANTIALIAS)
-        img.save(destimage, "JPEG", quality=99)
+        img.save(destimage, "JPEG", quality=self.JPG_QUALITY)
         return destimage
 
 
@@ -182,6 +197,7 @@ class LycheePhoto:
         Delete thumbnail files from the local disk. Called after the photo was successfully uploaded.
         """
         try:
+            os.remove(self.medium_path)
             os.remove(self.thumbnailfullpath)
             os.remove(self.thumbnailx2fullpath)
         except Exception:

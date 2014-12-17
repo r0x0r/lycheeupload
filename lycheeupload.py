@@ -1,7 +1,7 @@
 #!/bin/python
 # -*- coding: utf-8 -*-
 """
-lychee upload v1.2
+lychee upload v1.2.5
 (C) 2014 Roman Sirokov
 
 Imports images from a location on hard drive to the Lychee installation on a remote server via SSH.

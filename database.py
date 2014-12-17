@@ -218,18 +218,18 @@ class Database:
                      "size, star, " +
                      "thumbUrl, album, iso, aperture, make, " +
                      "model, shutter, focal, takestamp, " +
-                     "description, title, checksum) " +
+                     "description, title, checksum, medium) " +
                      "values " +
                      "({}, '{}', {}, '{}', {}, {}, " +
                      "'{}', {}, " +
                      "'{}', '{}', '{}', '{}', '{}', " +
                      "'{}', '{}', '{}', '{}', " +
-                     "'{}', '{}', '{}')"
+                     "'{}', '{}', '{}', {})"
                      ).format(photo.id, photo.url, conf.public, photo.type, photo.width, photo.height,
                               photo.size, photo.star,
                               photo.url, photo.albumid, photo.exif.iso, photo.exif.aperture, photo.exif.make,
                               photo.exif.model, photo.exif.shutter, photo.exif.focal, photo.datetime.strftime("%s"),
-                              photo.description, photo.originalname, photo.checksum)
+                              photo.description, photo.originalname, photo.checksum, 1)
 
             cur = self.db.cursor()
             cur.execute(query)
