@@ -1,8 +1,8 @@
 #!/bin/python
 # -*- coding: utf-8 -*-
 """
-lychee upload v1.2.5
-(C) 2014 Roman Sirokov
+lychee upload v1.3
+(C) 2014-2015 Roman Sirokov
 
 Imports images from a location on hard drive to the Lychee installation on a remote server via SSH.
 
@@ -58,10 +58,13 @@ def parse_arguments():
     parser.add_argument('-r', '--replace', help="replace albums in Lychee with local ones", action='store_true')
     parser.add_argument('-p', '--public', help="make uploaded photos public", action='store_true')
     parser.add_argument('-v', '--verbose', help='print verbose messages', action='store_true')
-    """
-    parser.add_argument('--size', help="Resize images so that neither width or height exceeds this size. "
-                                       "Converts all images to jpeg.", type=str)
-    """
+    parser.add_argument('-q', '--quality', help='JPEG quality 0-99 for resized pictures', type=int)
+    parser.add_argument('--medium', help='Maximum size for medium sized pictures. 1920px by default', type=int)
+    parser.add_argument('--big', help='Maximum size for big sized pictures. By default pictures are untouched ',
+                        type=int)
+    parser.add_argument('--originals',
+                        help='Upload original untouched files. To be used with the --big option, otherwise ignored.',
+                        action='store_true')
 
     if conf.osx:
         add_mac_arguments(parser, source_group)
@@ -72,7 +75,7 @@ def parse_arguments():
     conf.public = args.public
 
     if args.verbose:
-        conf.verbose = logging.INFO
+        conf.verbose = logging.DEBUG
 
     if args.server:
         if not parse_server_string(args.server[0]):
@@ -88,6 +91,22 @@ def parse_arguments():
     elif not conf.osx:
         logger.error("Please specify a directory to export photos from")
         return False
+
+    if args.quality:
+        conf.quality = args.quality
+    else:
+        conf.quality = 70
+
+    if args.medium:
+        conf.medium_size = args.medium
+    else:
+        conf.medium_size = 1920
+
+    if args.big:
+        conf.big_size = args.big
+
+    if args.originals and args.big:
+        conf.upload_originals = True
 
     if conf.osx:
         if not parse_mac_arguments(args):
@@ -192,8 +211,7 @@ def add_mac_arguments(parser, group):
                         help="Export matching smart albums. The argument is a regular expression. "
                              "If the argument is omitted, then all events are exported.")
 
-    parser.add_argument('--originals', help='Export originals instead of modified images', action="store_true")
-    parser.add_argument('-x', '--exclude',  metavar="pattern", type=str,
+    parser.add_argument('-x', '--exclude', metavar="pattern", type=str,
                         help="Don't export matching albums or events. The pattern is a regular expression.")
 
 

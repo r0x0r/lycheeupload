@@ -47,12 +47,15 @@ Finally install dependencies using *pip*
 General options
 
 - `username@hostname:path` Server connection string with a full path to the directory where Lychee is installed. 
--  `-h`, `--help`            show a help message
--  `-r`, `--replace`         replace albums in Lychee with local ones
--  `-p`, `--public`          make uploaded photos public
--  `-v`, `--verbose`         print verbose messages
+-  `-h`, `--help`            Show a help message
+-  `-r`, `--replace`         Replace albums in Lychee with local ones
+-  `-p`, `--public`          Make uploaded photos public
+-  `-v`, `--verbose`         Print verbose messages
+- `--medium`                 Maximum size for medium sized pictures. 1920px by default.
+- `--big`                    Maximum size for big sized pictures. By default pictures are untouched.
+- `--originals`              Upload original untouched files. To be used with the --big option, otherwise ignored. Files are place inside import directory. Note that this option is not currently supported by Lychee and is useful if you want to reduce the size of your big pictures, while still preserving originals.
 
-Directory import  options
+Directory import options
 
 -  `-d DIR`, `--dir DIR`     path to the photo directory where to export photos from.
 
@@ -63,7 +66,6 @@ iPhoto / Aperture options
 -  `-e [pattern]`, `--events [pattern]` Export matching events. The argument is a regular expression. If the argument is omitted, then all events are exported.
 -  `-a [pattern]`, `--albums [pattern]` Export matching regular albums. The argument is a regular expression. If the argument is omitted, then all events are exported.
 -  `-s [pattern]`, `--smarts [pattern]` Export matching smart albums. The argument is a regular expression. If the argument is omitted, then all events are exported.
-- `--originals`           Export originals instead of modified images
 -  `-x pattern`, `--exclude pattern` Don't export matching albums or events. The pattern is a regular expression.
 
 At very least you must specify a connection string and a source where photos should be imported from (`--dir`, `--iphoto` or `--aperture` options). 

@@ -99,7 +99,7 @@ class Database:
         for row in rows:
             self.albumslist[row[0]] = row[1]
 
-        logger.debug(self.albumslist)
+        #logger.debug(self.albumslist)
 
         return self.albumslist
 

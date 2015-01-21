@@ -64,7 +64,6 @@ class LycheePhoto:
     SMALL_THUMB_SIZE = (200, 200)
     BIG_THUMB_SIZE = (400, 400)
     MEDIUM_SIZE = (1920.0, 1080.0)
-    JPG_QUALITY = 80
 
 
     def __init__(self, full_path, album_id):
@@ -142,22 +141,35 @@ class LycheePhoto:
 
         self.thumbnailfullpath = self.generateThumbnail(self.SMALL_THUMB_SIZE)
         self.thumbnailx2fullpath = self.generateThumbnail(self.BIG_THUMB_SIZE)
-        self.medium_path = self.generateMediumRes(self.MEDIUM_SIZE)
+        self.medium_path = self.resize(conf.medium_size)
+
+        if "big_size" in dir(conf):
+            self.big_path = self.resize(conf.big_size)
+        else:
+            self.big_path = self.srcfullpath
 
         # Generate SHA1 hash
         self.checksum = self.generateHash(self.srcfullpath)
 
 
-    def generateMediumRes(self, res):
+    def resize(self, size):
         with tempfile.NamedTemporaryFile(delete=False) as temp_image:
+
             img = Image.open(self.srcfullpath)
-            ratio = min(res[0] / img.size[0], res[1] / img.size[1])
-            new_size = tuple(int(ratio * size) for size in img.size)
+            max_dimension = max(img.size[0], img.size[1])
 
-            medium_img = img.resize(new_size, Image.ANTIALIAS)
-            medium_img.save(temp_image.name, "JPEG", quality=self.JPG_QUALITY)
+            if size < max_dimension:
+                ratio = float(size) / max_dimension
+                new_size = tuple(int(ratio * size) for size in img.size)
+                logger.debug("Original size: {}x{}; New size: {}x{}".format(img.size[0], img.size[1], new_size[0], new_size[1]))
 
-            return temp_image.name
+                resized_img = img.resize(new_size, Image.ANTIALIAS)
+                resized_img.save(temp_image.name, "JPEG", quality=conf.quality)
+
+                return temp_image.name
+            else:
+                logger.debug("No resize needed. Image unchanged")
+                return self.srcfullpath
 
 
     def generateThumbnail(self, res):
@@ -188,7 +200,7 @@ class LycheePhoto:
         img = Image.open(self.srcfullpath)
         img = img.crop((left, upper, right, lower))
         img.thumbnail(res, Image.ANTIALIAS)
-        img.save(destimage, "JPEG", quality=self.JPG_QUALITY)
+        img.save(destimage, "JPEG", quality=conf.quality)
         return destimage
 
 

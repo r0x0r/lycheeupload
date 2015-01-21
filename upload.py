@@ -55,11 +55,18 @@ class Upload:
 
         try:
             thumbnail_path = os.path.join(conf.path, "uploads", "thumb")
-            medium_path = os.path.join(conf.path, "uploads", "medium")
+            medium_path = os.path.join(conf.path, "uploads", "medium", photo.url)
+            import_path = os.path.join(conf.path, "uploads", "import", photo.url)
 
-            # upload photo
-            self.ssh.put(photo.srcfullpath, photo.destfullpath)
-            self.ssh.put(photo.medium_path, os.path.join(medium_path, photo.url))
+            # if the big flag is set, upload the resized photo to the big directory and the original photo into the
+            # import directory
+            if "big_size" in dir(conf):
+                self.ssh.put(photo.big_path, photo.destfullpath)
+
+            if "upload_originals" in dir(conf):
+                self.ssh.put(photo.srcfullpath, import_path)
+
+            self.ssh.put(photo.medium_path, medium_path)
             self.ssh.put(photo.thumbnailfullpath, os.path.join(thumbnail_path, photo.url))
             self.ssh.put(photo.thumbnailx2fullpath, os.path.join(thumbnail_path, photo.thumb2xUrl))
 

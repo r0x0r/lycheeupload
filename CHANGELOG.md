@@ -1,3 +1,9 @@
+## 1.3
+- `New` Support for resizing big sized photos (--big switch)
+- `New` Ability to choose JPEG quality (--quality switch)
+- `New` Support for uploading original unmodified files (--originals switch).
+
+
 ## 1.2.5
 - `New` Support for medium sized files introduced in Lychee 2.7 
 - `Improved` Decreased the quality of generated thumbnails for smaller thumbnail sizes
