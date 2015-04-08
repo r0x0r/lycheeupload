@@ -1,3 +1,6 @@
+## 1.3.5
+- `New` Added an option to specify a custom SSH port (--port switch)
+
 ## 1.3
 - `New` Support for resizing big sized photos (--big switch)
 - `New` Ability to choose JPEG quality (--quality switch)
