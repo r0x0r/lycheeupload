@@ -50,6 +50,7 @@ General options
 -  `-h`, `--help`            Show a help message
 -  `-r`, `--replace`         Replace albums in Lychee with local ones
 -  `-p`, `--public`          Make uploaded photos public
+-  `-P`, `--port`            Alternative SSH port (default 22)
 -  `-v`, `--verbose`         Print verbose messages
 - `--medium`                 Maximum size for medium sized pictures. 1920px by default.
 - `--big`                    Maximum size for big sized pictures. By default pictures are untouched.
