@@ -36,7 +36,7 @@ class SSH:
             return
         else:
             try:
-                self._ssh.connect(conf.server, username=conf.username, password=password)
+                self._ssh.connect(conf.server, username=conf.username, password=password, port=conf.port)
                 self._ftp = self._ssh.open_sftp()
                 print("Connected to " + conf.server)
 

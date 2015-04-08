@@ -56,6 +56,7 @@ def parse_arguments():
     source_group.add_argument('-d', '--dir', help="path to the photo directory where to export photos from.", type=str)
 
     parser.add_argument('-r', '--replace', help="replace albums in Lychee with local ones", action='store_true')
+    parser.add_argument('-P', '--port', help="alternative SSH port", type=int)
     parser.add_argument('-p', '--public', help="make uploaded photos public", action='store_true')
     parser.add_argument('-v', '--verbose', help='print verbose messages', action='store_true')
     parser.add_argument('-q', '--quality', help='JPEG quality 0-99 for resized pictures', type=int)
@@ -91,6 +92,11 @@ def parse_arguments():
     elif not conf.osx:
         logger.error("Please specify a directory to export photos from")
         return False
+
+    if args.port:
+        conf.port = args.port
+    else:
+        conf.port = 22
 
     if args.quality:
         conf.quality = args.quality
