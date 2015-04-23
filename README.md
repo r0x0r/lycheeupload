@@ -36,8 +36,8 @@ Install *pip* if you do not have it already
 `sudo easy_install pip`
 
 Finally install dependencies using *pip*
-
-`sudo pip install mysql-connector-python paramiko Pillow`
+`sudo pip install --allow-external mysql-connector-python mysql-connector-python`
+`sudo pip install paramiko Pillow`
 
 
 # Usage
