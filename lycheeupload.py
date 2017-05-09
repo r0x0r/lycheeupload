@@ -127,7 +127,7 @@ def parse_server_string(server_string):
     :param server_string: Server string in the form of user@host:path
     :return: True if successful, False if parsing fails
     """
-    match = re.match("(.+)@([\w\d\.]+):(.+)", server_string)
+    match = re.match("(.+)@([\w\d\-\.]+):(.+)", server_string)
 
     if match:
         conf.username = match.group(1)
